@@ -77,24 +77,28 @@ export interface Product {
 }
 
 export interface OrderItem {
-  product: {
-    _id: string;
-    name: string;
-    price: number;
-    imageUrl?: string;
-  } | string;
+  product:
+    | {
+        _id: string;
+        name: string;
+        price: number;
+        imageUrl?: string;
+      }
+    | string;
   quantity: number;
   price: number;
 }
 
 export interface Order {
   _id: string;
-  user: {
-    _id: string;
-    name: string;
-    email: string;
-    mobile?: string;
-  } | string;
+  user:
+    | {
+        _id: string;
+        name: string;
+        email: string;
+        mobile?: string;
+      }
+    | string;
   items: OrderItem[];
   totalAmount: number;
   status: "pending" | "confirmed" | "delivered" | "cancelled";
@@ -107,7 +111,7 @@ export interface CreateOrderInput {
   userId?: string;
   items: {
     product: string;
-  quantity: number;
+    quantity: number;
   }[];
 }
 

@@ -79,12 +79,16 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
 }) => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedAreaPixels | null>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] =
+    useState<CroppedAreaPixels | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleCropComplete = useCallback((_: any, croppedPixels: CroppedAreaPixels) => {
-    setCroppedAreaPixels(croppedPixels);
-  }, []);
+  const handleCropComplete = useCallback(
+    (_: any, croppedPixels: CroppedAreaPixels) => {
+      setCroppedAreaPixels(croppedPixels);
+    },
+    []
+  );
 
   const handleSave = useCallback(async () => {
     if (!croppedAreaPixels) return;

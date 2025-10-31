@@ -16,7 +16,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import { toast } from "react-hot-toast";
 import NoData from "./NoData";
-import PaginationAdvanced from "./PaginationAdvanced";
+import Pagination from "./Pagination";
 
 const LIMIT_OPTIONS = [5, 10, 20, 50];
 
@@ -209,7 +209,7 @@ const CommonTable = <T,>({
         </div>
       </div>
       {!dashBoard && totalPages > 1 && (
-        <PaginationAdvanced
+        <Pagination
           total={data?.length || 0}
           currentPage={currentPage || 1}
           pageSize={limit || 10}

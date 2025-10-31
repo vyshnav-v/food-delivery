@@ -69,4 +69,3 @@ orderSchema.index({ status: 1 });
 const Order = mongoose.model<IOrder>("Order", orderSchema);
 
 export default Order;
-

@@ -24,7 +24,8 @@ export const productService = {
   async createProduct(
     product: FormData | Partial<Product>
   ): Promise<ApiResponse<Product>> {
-    const isFormData = typeof FormData !== "undefined" && product instanceof FormData;
+    const isFormData =
+      typeof FormData !== "undefined" && product instanceof FormData;
     const response = await axios.post("/products", product, {
       headers: isFormData
         ? { "Content-Type": "multipart/form-data" }
@@ -37,7 +38,8 @@ export const productService = {
     id: string,
     product: FormData | Partial<Product>
   ): Promise<ApiResponse<Product>> {
-    const isFormData = typeof FormData !== "undefined" && product instanceof FormData;
+    const isFormData =
+      typeof FormData !== "undefined" && product instanceof FormData;
     const response = await axios.put(`/products/${id}`, product, {
       headers: isFormData
         ? { "Content-Type": "multipart/form-data" }
@@ -53,11 +55,15 @@ export const productService = {
     const formData = new FormData();
     formData.append("image", file);
 
-    const response = await axios.post(`/products/${id}/upload-image`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await axios.post(
+      `/products/${id}/upload-image`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
 
     return response.data;
   },

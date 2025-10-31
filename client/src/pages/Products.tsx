@@ -13,7 +13,7 @@ import {
 import toast from "react-hot-toast";
 import { productService } from "../services/productService";
 import { categoryService } from "../services/categoryService";
-import PaginationAdvanced from "../components/PaginationAdvanced";
+import Pagination from "../components/Pagination";
 import Modal from "../components/Modal";
 import { ProductForm } from "../components/forms";
 import LoadingSkeleton from "../components/LoadingSkeleton";
@@ -75,6 +75,7 @@ const Products = () => {
   });
 
   const pagination = usePagination({ initialPage, pageSize: initialLimit });
+  const { setCurrentPage: setPaginationCurrentPage } = pagination;
 
   const [filters, setFilters] = React.useState<FiltersState>(() => ({
     category: searchParams.get("category") || "",
@@ -109,10 +110,10 @@ const Products = () => {
         return { ...prev, [field]: value };
       });
       if (hasChanged) {
-        pagination.setCurrentPage(1);
+        setPaginationCurrentPage(1);
       }
     },
-    [pagination.setCurrentPage]
+    [setPaginationCurrentPage]
   );
 
   React.useEffect(() => {
@@ -137,7 +138,7 @@ const Products = () => {
     const pageFromUrl = parseNumberParam(searchParams.get("page"), 1, {
       min: 1,
     });
-    pagination.setCurrentPage(pageFromUrl);
+    setPaginationCurrentPage(pageFromUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParamsKey]);
 
@@ -239,13 +240,13 @@ const Products = () => {
   };
 
   const applyFilters = () => {
-    pagination.setCurrentPage(1);
+    setPaginationCurrentPage(1);
     setShowFilters(false);
   };
 
   const clearFilters = () => {
     setFilters(createDefaultFilters());
-    pagination.setCurrentPage(1);
+    setPaginationCurrentPage(1);
     setShowFilters(false);
   };
 
@@ -676,7 +677,7 @@ const Products = () => {
 
       {/* Pagination */}
       {!isLoading && pagination.totalPages > 1 && (
-        <PaginationAdvanced
+        <Pagination
           total={pagination.totalCount || 0}
           currentPage={pagination.currentPage}
           pageSize={pagination.pageSize}
@@ -718,33 +719,36 @@ const ProductFormWrapper = ({
   onCancel: () => void;
   isSubmitting: boolean;
 }) => {
-  const getCategoryId = (category: any): string => {
+  const getCategoryId = React.useCallback((category: any): string => {
     if (typeof category === "string") return category;
     return category?._id || "";
-  };
+  }, []);
 
-  const resolveImageUrl = (url?: string) => {
+  const resolveImageUrl = React.useCallback((url?: string) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
     return (
       import.meta.env.VITE_API_URL?.replace("/api", "") ||
       "http://localhost:5000"
     ).concat(url);
-  };
+  }, []);
 
-  const createExistingImage = (url?: string): FileType[] => {
-    if (!url) return [];
-    return [
-      {
-        file: undefined,
-        fileId: "existing-image",
-        name: url.split("/").pop() || "product-image.webp",
-        size: 0,
-        url: resolveImageUrl(url),
-        type: "image/existing",
-      },
-    ];
-  };
+  const createExistingImage = React.useCallback(
+    (url?: string): FileType[] => {
+      if (!url) return [];
+      return [
+        {
+          file: undefined,
+          fileId: "existing-image",
+          name: url.split("/").pop() || "product-image.webp",
+          size: 0,
+          url: resolveImageUrl(url),
+          type: "image/existing",
+        },
+      ];
+    },
+    [resolveImageUrl]
+  );
 
   const [formData, setFormData] = React.useState({
     name: product?.name || "",
@@ -772,7 +776,7 @@ const ProductFormWrapper = ({
         image: createExistingImage(product.imageUrl),
       });
     }
-  }, [product]);
+  }, [createExistingImage, getCategoryId, product]);
 
   const handleFormChange = (field: string, value: any) => {
     if (field === "image") {

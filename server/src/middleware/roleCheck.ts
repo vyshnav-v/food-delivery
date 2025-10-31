@@ -41,4 +41,3 @@ export const isCustomer = checkRole("customer");
  * Middleware to check if user is admin or customer
  */
 export const isAdminOrCustomer = checkRole("admin", "customer");
-

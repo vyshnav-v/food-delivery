@@ -149,9 +149,9 @@ const Register = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Brand & Info (Hidden on mobile, visible on lg+) */}
-      <div 
+      <div
         className="hidden lg:flex lg:w-1/2 xl:w-2/5 flex-col justify-between p-12 text-white relative overflow-hidden"
-        style={{ backgroundColor: 'rgb(3, 82, 78)' }}
+        style={{ backgroundColor: "rgb(3, 82, 78)" }}
       >
         {/* Decorative background pattern */}
         <div className="absolute inset-0 opacity-10">
@@ -175,8 +175,9 @@ const Register = () => {
               Start Managing Your Restaurant Today
             </h2>
             <p className="text-lg text-white/80 leading-relaxed">
-              Join thousands of restaurants using our platform to streamline operations, 
-              track orders in real-time, and deliver exceptional customer experiences.
+              Join thousands of restaurants using our platform to streamline
+              operations, track orders in real-time, and deliver exceptional
+              customer experiences.
             </p>
 
             {/* Features */}
@@ -187,7 +188,9 @@ const Register = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold">Easy Product Management</h3>
-                  <p className="text-sm text-white/70">Update menu items instantly</p>
+                  <p className="text-sm text-white/70">
+                    Update menu items instantly
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -196,7 +199,9 @@ const Register = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold">Business Insights</h3>
-                  <p className="text-sm text-white/70">Make data-driven decisions</p>
+                  <p className="text-sm text-white/70">
+                    Make data-driven decisions
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -205,7 +210,9 @@ const Register = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold">Customer Management</h3>
-                  <p className="text-sm text-white/70">Build lasting relationships</p>
+                  <p className="text-sm text-white/70">
+                    Build lasting relationships
+                  </p>
                 </div>
               </div>
             </div>
@@ -223,213 +230,222 @@ const Register = () => {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
-            <div 
+            <div
               className="p-2 rounded-lg"
-              style={{ backgroundColor: 'rgb(3, 82, 78)' }}
+              style={{ backgroundColor: "rgb(3, 82, 78)" }}
             >
               <Utensils size={24} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold" style={{ color: 'rgb(3, 82, 78)' }}>
+            <h1
+              className="text-2xl font-bold"
+              style={{ color: "rgb(3, 82, 78)" }}
+            >
               Food Delivery Admin
             </h1>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="text-center mb-8">
-              <div 
+              <div
                 className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
-                style={{ backgroundColor: 'rgba(3, 82, 78, 0.1)' }}
+                style={{ backgroundColor: "rgba(3, 82, 78, 0.1)" }}
               >
-                <UserPlus size={32} style={{ color: 'rgb(3, 82, 78)' }} />
+                <UserPlus size={32} style={{ color: "rgb(3, 82, 78)" }} />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
-        <p className="text-gray-600 mt-2">Sign up to get started</p>
-      </div>
+              <h2 className="text-3xl font-bold text-gray-900">
+                Create Account
+              </h2>
+              <p className="text-gray-600 mt-2">Sign up to get started</p>
+            </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <div>
-          <label
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <div>
+                <label
                   htmlFor="name"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Full Name
-          </label>
-          <div className="relative">
-            <User
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
+                </label>
+                <div className="relative">
+                  <User
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={20}
+                  />
+                  <input
+                    type="text"
                     id="name"
                     name="name"
                     value={formData.name}
-              onChange={handleChange}
-              className={`input-field pl-10 ${
+                    onChange={handleChange}
+                    className={`input-field pl-10 ${
                       errors.name ? "border-red-500 focus:ring-red-500" : ""
-              }`}
+                    }`}
                     placeholder="John Doe"
-              disabled={isLoading || isRedirecting}
-            />
-          </div>
+                    disabled={isLoading || isRedirecting}
+                  />
+                </div>
                 {errors.name && (
-            <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
-              <AlertCircle size={14} />
+                  <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                    <AlertCircle size={14} />
                     <span>{errors.name}</span>
-            </div>
-          )}
-        </div>
+                  </div>
+                )}
+              </div>
 
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Email Address
-          </label>
-          <div className="relative">
-            <Mail
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={`input-field pl-10 ${
-                errors.email ? "border-red-500 focus:ring-red-500" : ""
-              }`}
-              placeholder="you@example.com"
-              disabled={isLoading || isRedirecting}
-            />
-          </div>
-          {errors.email && (
-            <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
-              <AlertCircle size={14} />
-              <span>{errors.email}</span>
-            </div>
-          )}
-        </div>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={20}
+                  />
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={`input-field pl-10 ${
+                      errors.email ? "border-red-500 focus:ring-red-500" : ""
+                    }`}
+                    placeholder="you@example.com"
+                    disabled={isLoading || isRedirecting}
+                  />
+                </div>
+                {errors.email && (
+                  <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                    <AlertCircle size={14} />
+                    <span>{errors.email}</span>
+                  </div>
+                )}
+              </div>
 
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Password
-          </label>
-          <div className="relative">
-            <Lock
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type={showPassword ? "text" : "password"}
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={`input-field pl-10 pr-10 ${
-                errors.password ? "border-red-500 focus:ring-red-500" : ""
-              }`}
-              placeholder="••••••••"
-              disabled={isLoading || isRedirecting}
-            />
-            <button
-              type="button"
-              onClick={togglePasswordVisibility}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              disabled={isLoading || isRedirecting}
-            >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-          </div>
-          {errors.password && (
-            <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
-              <AlertCircle size={14} />
-              <span>{errors.password}</span>
-            </div>
-          )}
-        </div>
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={20}
+                  />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className={`input-field pl-10 pr-10 ${
+                      errors.password ? "border-red-500 focus:ring-red-500" : ""
+                    }`}
+                    placeholder="••••••••"
+                    disabled={isLoading || isRedirecting}
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    disabled={isLoading || isRedirecting}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                    <AlertCircle size={14} />
+                    <span>{errors.password}</span>
+                  </div>
+                )}
+              </div>
 
-        <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Confirm Password
-          </label>
-          <div className="relative">
-            <Lock
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className={`input-field pl-10 pr-10 ${
-                errors.confirmPassword
-                  ? "border-red-500 focus:ring-red-500"
-                  : ""
-              }`}
-              placeholder="••••••••"
-              disabled={isLoading || isRedirecting}
-            />
-            <button
-              type="button"
-              onClick={toggleConfirmPasswordVisibility}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              disabled={isLoading || isRedirecting}
-            >
-              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-          </div>
-          {errors.confirmPassword && (
-            <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
-              <AlertCircle size={14} />
-              <span>{errors.confirmPassword}</span>
-            </div>
-          )}
-        </div>
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={20}
+                  />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className={`input-field pl-10 pr-10 ${
+                      errors.confirmPassword
+                        ? "border-red-500 focus:ring-red-500"
+                        : ""
+                    }`}
+                    placeholder="••••••••"
+                    disabled={isLoading || isRedirecting}
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleConfirmPasswordVisibility}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    disabled={isLoading || isRedirecting}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} />
+                    ) : (
+                      <Eye size={20} />
+                    )}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                    <AlertCircle size={14} />
+                    <span>{errors.confirmPassword}</span>
+                  </div>
+                )}
+              </div>
 
-        <button
-          type="submit"
-          disabled={isLoading || isRedirecting}
+              <button
+                type="submit"
+                disabled={isLoading || isRedirecting}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-50"
-                style={{ backgroundColor: 'rgb(3, 82, 78)' }}
-        >
-          {isLoading || isRedirecting ? (
-            <>
-              <Loader2 size={20} className="animate-spin" />
-              <span>
-                {isRedirecting ? "Redirecting..." : "Creating account..."}
-              </span>
-            </>
-          ) : (
-            <>
-              <UserPlus size={20} />
-              <span>Create Account</span>
-            </>
-          )}
-        </button>
-      </form>
+                style={{ backgroundColor: "rgb(3, 82, 78)" }}
+              >
+                {isLoading || isRedirecting ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    <span>
+                      {isRedirecting ? "Redirecting..." : "Creating account..."}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus size={20} />
+                    <span>Create Account</span>
+                  </>
+                )}
+              </button>
+            </form>
 
             <div className="mt-6 text-center">
-        <p className="text-gray-600">
-          Already have an account?{" "}
-          <Link
-            to="/login"
+              <p className="text-gray-600">
+                Already have an account?{" "}
+                <Link
+                  to="/login"
                   className="font-medium hover:underline"
-                  style={{ color: 'rgb(3, 82, 78)' }}
-          >
-            Sign in
-          </Link>
-        </p>
+                  style={{ color: "rgb(3, 82, 78)" }}
+                >
+                  Sign in
+                </Link>
+              </p>
             </div>
           </div>
         </div>

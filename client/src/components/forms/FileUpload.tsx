@@ -16,7 +16,7 @@ interface FileUploadProps {
   accept?: string;
   beforeUpload?: (
     newFiles: File[],
-    files: File[],
+    files: File[]
   ) => Promise<boolean | string> | boolean | string;
   disabled?: boolean;
   draggable?: boolean;
@@ -82,55 +82,61 @@ const FileUpload = forwardRef<HTMLDivElement, FileUploadProps>((props, ref) => {
     }
   }, [fileList, multiple]);
 
-  const triggerMessage = (msg: any) => {
-    toast.error(msg || 'Upload Failed!');
-  };
+  const triggerMessage = useCallback((msg: any) => {
+    toast.error(msg || "Upload Failed!");
+  }, []);
 
-  const addNewFiles = (newFiles: File[]) => {
-    let updatedFiles = [...files];
+  const addNewFiles = useCallback(
+    (newFiles: File[]) => {
+      let updatedFiles = [...files];
 
-    if (!multiple) {
-      updatedFiles = [newFiles[0]];
-    } else {
-      if (uploadLimit && updatedFiles.length >= uploadLimit) {
-        if (uploadLimit === 1) {
-          updatedFiles.shift();
-        } else {
-          updatedFiles = updatedFiles.slice(-uploadLimit + newFiles.length);
+      if (!multiple) {
+        updatedFiles = [newFiles[0]];
+      } else {
+        if (uploadLimit && updatedFiles.length >= uploadLimit) {
+          if (uploadLimit === 1) {
+            updatedFiles.shift();
+          } else {
+            updatedFiles = updatedFiles.slice(-uploadLimit + newFiles.length);
+          }
         }
+        updatedFiles.push(...newFiles);
       }
-      updatedFiles.push(...newFiles);
-    }
 
-    return filesToArray(updatedFiles);
-  };
+      return filesToArray(updatedFiles);
+    },
+    [files, multiple, uploadLimit]
+  );
 
-  const onNewFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const newFiles = Array.from(e.target.files);
+  const onNewFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!e.target.files) return;
+      const newFiles = Array.from(e.target.files);
 
-    let result = beforeUpload ? await beforeUpload(newFiles, files) : true;
+      const result = beforeUpload ? await beforeUpload(newFiles, files) : true;
 
-    if (result === false || typeof result === 'string') {
-      triggerMessage(typeof result === 'string' ? result : undefined);
-      return;
-    }
+      if (result === false || typeof result === "string") {
+        triggerMessage(typeof result === "string" ? result : undefined);
+        return;
+      }
 
-    if (enableCrop && newFiles.length > 0) {
-      const file = newFiles[0];
-      const url = URL.createObjectURL(file);
-      setCropState({ file, url });
-      return;
-    }
+      if (enableCrop && newFiles.length > 0) {
+        const file = newFiles[0];
+        const url = URL.createObjectURL(file);
+        setCropState({ file, url });
+        return;
+      }
 
-    const updatedFiles = addNewFiles(newFiles);
-    onChange?.(updatedFiles);
+      const updatedFiles = addNewFiles(newFiles);
+      onChange?.(updatedFiles);
 
-    // ✅ Reset file input
-    if (fileInputField.current) {
-      fileInputField.current.value = '';
-    }
-  };
+      // ✅ Reset file input
+      if (fileInputField.current) {
+        fileInputField.current.value = "";
+      }
+    },
+    [addNewFiles, beforeUpload, enableCrop, files, onChange, triggerMessage]
+  );
 
   const removeFile = (fileIndex: number) => {
     const deletedFileList = files.filter((_, index) => index !== fileIndex);
@@ -169,7 +175,7 @@ const FileUpload = forwardRef<HTMLDivElement, FileUploadProps>((props, ref) => {
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault(); // ✅ Prevent browser behavior
     },
-    [],
+    []
   );
 
   const handleDrop = useCallback(
@@ -180,7 +186,7 @@ const FileUpload = forwardRef<HTMLDivElement, FileUploadProps>((props, ref) => {
         const newFiles = Array.from(event.dataTransfer.files);
 
         if (!multiple && newFiles.length > 1) {
-          triggerMessage('Only one file is allowed at a time.');
+          triggerMessage("Only one file is allowed at a time.");
           return;
         }
 
@@ -189,7 +195,7 @@ const FileUpload = forwardRef<HTMLDivElement, FileUploadProps>((props, ref) => {
         } as any);
       }
     },
-    [draggable, disabled, multiple, onNewFileUpload, triggerMessage],
+    [draggable, disabled, multiple, onNewFileUpload, triggerMessage]
   );
 
   const draggableProp = {
@@ -200,13 +206,13 @@ const FileUpload = forwardRef<HTMLDivElement, FileUploadProps>((props, ref) => {
   };
 
   const uploadClass = classNames(
-    'upload',
-    draggable && 'upload-draggable',
-    draggable && disabled && 'disabled',
-    className,
+    "upload",
+    draggable && "upload-draggable",
+    draggable && disabled && "disabled",
+    className
   );
 
-  const uploadInputClass = classNames('upload-input', draggable && 'draggable');
+  const uploadInputClass = classNames("upload-input", draggable && "draggable");
 
   return (
     <>
@@ -235,11 +241,7 @@ const FileUpload = forwardRef<HTMLDivElement, FileUploadProps>((props, ref) => {
       {(showPreview ?? showList) && (
         <div className="mt-2">
           {files.map((file, index) => (
-            <FileItem
-              file={file}
-              key={file.name + index}
-              limit={limit}
-            >
+            <FileItem file={file} key={file.name + index} limit={limit}>
               <button
                 type="button"
                 onClick={() => removeFile(index)}
@@ -268,7 +270,7 @@ const FileUpload = forwardRef<HTMLDivElement, FileUploadProps>((props, ref) => {
           }
           setCropState(null);
           if (fileInputField.current) {
-            fileInputField.current.value = '';
+            fileInputField.current.value = "";
           }
         }}
         onComplete={(file) => {
@@ -278,7 +280,7 @@ const FileUpload = forwardRef<HTMLDivElement, FileUploadProps>((props, ref) => {
           setCropState(null);
           onChange?.([file]);
           if (fileInputField.current) {
-            fileInputField.current.value = '';
+            fileInputField.current.value = "";
           }
         }}
       />
@@ -286,6 +288,6 @@ const FileUpload = forwardRef<HTMLDivElement, FileUploadProps>((props, ref) => {
   );
 });
 
-FileUpload.displayName = 'FileUpload';
+FileUpload.displayName = "FileUpload";
 
 export default FileUpload;

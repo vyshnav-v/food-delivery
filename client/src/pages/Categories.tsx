@@ -66,14 +66,14 @@ const Categories = () => {
       const productsResponse = await productService.getProducts({
         category: categoryId,
       });
-      
+
       if (productsResponse.data && productsResponse.data.length > 0) {
         toast.error(
           `Cannot delete category with ${productsResponse.data.length} product(s). Please remove or reassign products first.`
         );
         return;
       }
-      
+
       await crud.remove(categoryId);
     } catch (error) {
       console.error("Error checking category products:", error);
@@ -276,5 +276,3 @@ const CategoryFormWrapper = ({
 };
 
 export default Categories;
-
-

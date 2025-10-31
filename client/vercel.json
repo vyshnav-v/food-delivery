@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/s/:shortCode",
-      "destination": "https://task-manager-backend-5v7c.onrender.com/s/:shortCode"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

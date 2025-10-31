@@ -42,4 +42,3 @@ router
   .delete(deleteOrder);
 
 export default router;
-
