@@ -1,0 +1,29 @@
+{
+    "name": "food-delivery-admin",
+    "version": "1.0.0",
+    "description": "Food Delivery Admin Panel - Full Stack Application",
+    "main": "index.js",
+    "scripts": {
+        "dev": "concurrently \"yarn server\" \"yarn client\"",
+        "server": "cd server && yarn dev",
+        "client": "cd client && yarn dev",
+        "install:all": "yarn install && cd server && yarn install && cd ../client && yarn install",
+        "build": "cd server && yarn build",
+        "build:client": "cd client && yarn build",
+        "start": "cd server && yarn start"
+    },
+    "keywords": [
+        "food-delivery",
+        "admin-panel",
+        "react",
+        "express",
+        "mongodb",
+        "typescript",
+        "zustand"
+    ],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "concurrently": "^9.1.2"
+    }
+}

@@ -1,0 +1,56 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Food Delivery Admin Panel - Backend API",
+  "main": "dist/server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "nodemon --watch src --exec ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "seed": "ts-node src/scripts/seedData.ts",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
+    "lint": "tsc --noEmit",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "food-delivery",
+    "admin-panel",
+    "express",
+    "mongodb",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.7.0",
+    "@untitled-ui/icons-react": "^0.1.4",
+    "bcryptjs": "^3.0.2",
+    "classnames": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.1",
+    "multer": "^2.0.2",
+    "react-loading-skeleton": "^3.5.0",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prettier": "^3.4.2",
+    "ts-node": "^10.9.2"
+  }
+}
