@@ -130,7 +130,7 @@ const Login = () => {
             <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
               <Utensils size={32} className="text-white" />
             </div>
-            <h1 className="text-3xl font-bold">Food Delivery Admin</h1>
+            <h1 className="text-3xl font-bold">Food Delivery</h1>
           </div>
 
           {/* Main Description */}
@@ -204,7 +204,7 @@ const Login = () => {
               className="text-2xl font-bold"
               style={{ color: "rgb(3, 82, 78)" }}
             >
-              Food Delivery Admin
+              Food Delivery
             </h1>
           </div>
 

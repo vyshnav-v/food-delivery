@@ -82,10 +82,10 @@ const Pagination: React.FC<PaginationProps> = ({
           Total <span>{total}</span> Items
         </div>
       )}
-      <div className="flex items-center gap-3 ml-auto">
-        {/* First Button */}
+      <div className="flex items-center justify-center sm:justify-end gap-2 sm:gap-3 ml-auto flex-wrap">
+        {/* First Button - Hidden on mobile */}
         <button
-          className={`px-3 py-1.5 text-sm font-medium text-gray-700 rounded-md transition-colors ${
+          className={`hidden md:inline-flex px-3 py-1.5 text-sm font-medium text-gray-700 rounded-md transition-colors ${
             internalCurrentPage <= 1
               ? "opacity-40 cursor-not-allowed"
               : "hover:bg-gray-100 cursor-pointer"
@@ -105,13 +105,15 @@ const Pagination: React.FC<PaginationProps> = ({
           }`}
           onClick={internalCurrentPage > 1 ? onPrev : undefined}
           disabled={internalCurrentPage <= 1}
+          aria-label="Previous page"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
         {/* Page Indicator */}
-        <div className="px-4 py-1.5 text-sm font-medium text-gray-700">
-          Page {internalCurrentPage} of {getInternalPageCount}
+        <div className="px-2 sm:px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">
+          Page <span className="font-semibold">{internalCurrentPage}</span> of{" "}
+          <span className="font-semibold">{getInternalPageCount}</span>
         </div>
 
         {/* Next Button */}
@@ -125,13 +127,14 @@ const Pagination: React.FC<PaginationProps> = ({
             internalCurrentPage < getInternalPageCount ? onNext : undefined
           }
           disabled={internalCurrentPage >= getInternalPageCount}
+          aria-label="Next page"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
 
-        {/* Last Button */}
+        {/* Last Button - Hidden on mobile */}
         <button
-          className={`px-3 py-1.5 text-sm font-medium text-gray-700 rounded-md transition-colors ${
+          className={`hidden md:inline-flex px-3 py-1.5 text-sm font-medium text-gray-700 rounded-md transition-colors ${
             internalCurrentPage >= getInternalPageCount
               ? "opacity-40 cursor-not-allowed"
               : "hover:bg-gray-100 cursor-pointer"

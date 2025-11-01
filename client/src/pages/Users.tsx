@@ -7,24 +7,30 @@ import {
   Users as UsersIcon,
   Shield,
   User as UserIcon,
+  SortAsc,
+  Filter,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { userService } from "../services/userService";
-import Modal from "../components/Modal";
-import CommonTable from "../components/CommonTable";
-import { useFetch, useCRUD, useModal } from "../hooks";
-import type { User } from "../types";
+import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import type { ColumnDef } from "@tanstack/react-table";
 
-// Column definitions for the users table
+import type { AxiosError } from "axios";
+
+import { userService } from "../services/userService";
+import Modal from "../components/Modal";
+import CommonTable from "../components/CommonTable";
+import { UserForm } from "../components/forms";
+import { useFetch, useCRUD, useModal, usePagination } from "../hooks";
+import type { User } from "../types";
+
 const userColumns = ({
   handleOpenUserModal,
   handleDelete,
   isDeleting,
 }: {
   handleOpenUserModal: (user: User) => void;
-  handleDelete: (id: string) => void;
+  handleDelete: (user: User) => void;
   isDeleting: boolean;
 }): ColumnDef<User>[] => [
   {
@@ -97,7 +103,7 @@ const userColumns = ({
           <Edit size={18} />
         </button>
         <button
-          onClick={() => handleDelete(row.original._id || row.original.id)}
+          onClick={() => handleDelete(row.original)}
           className="text-red-600 hover:text-red-800 transition-colors"
           title="Delete user"
           disabled={isDeleting}
@@ -109,18 +115,252 @@ const userColumns = ({
   },
 ];
 
+interface FiltersState {
+  search: string;
+  sort: string;
+  role: string;
+}
+
+const areFiltersEqual = (a: FiltersState, b: FiltersState) =>
+  a.search === b.search && a.sort === b.sort && a.role === b.role;
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  errors?: Record<string, string | string[]>;
+};
+
+const extractErrorMessage = (
+  error: unknown,
+  fallback = "Failed to save user"
+) => {
+  if (error && typeof error === "object") {
+    const axiosError = error as AxiosError<ApiErrorResponse>;
+    if (axiosError?.response?.data) {
+      const { error: err, message, errors } = axiosError.response.data;
+      if (err && typeof err === "string" && err.trim().length > 0) {
+        return err;
+      }
+      if (message && typeof message === "string" && message.trim().length > 0) {
+        return message;
+      }
+      if (errors && typeof errors === "object") {
+        const firstKey = Object.keys(errors)[0];
+        if (firstKey) {
+          const value = errors[firstKey];
+          if (Array.isArray(value) && value.length > 0) {
+            return value[0];
+          }
+          if (typeof value === "string" && value.trim().length > 0) {
+            return value;
+          }
+        }
+      }
+    }
+    if (axiosError?.message) {
+      return axiosError.message;
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 const Users = () => {
   const modal = useModal<User>();
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [roleFilter, setRoleFilter] = React.useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParamsKey = React.useMemo(
+    () => searchParams.toString(),
+    [searchParams]
+  );
+  const skipNextUrlSync = React.useRef(false);
+
+  const parseNumberParam = React.useCallback(
+    (
+      value: string | null,
+      fallback: number,
+      options: { min?: number; max?: number } = {}
+    ) => {
+      if (!value) return fallback;
+      const parsed = parseInt(value, 10);
+      if (Number.isNaN(parsed)) return fallback;
+      const min = options.min ?? 1;
+      const max = options.max;
+      const clamped = Math.max(min, parsed);
+      return typeof max === "number" ? Math.min(clamped, max) : clamped;
+    },
+    []
+  );
+
+  const initialPage = parseNumberParam(searchParams.get("page"), 1, { min: 1 });
+  const initialLimit = parseNumberParam(searchParams.get("limit"), 10, {
+    min: 1,
+    max: 100,
+  });
+
+  const pagination = usePagination({ initialPage, pageSize: initialLimit });
+  const { setCurrentPage: setPaginationCurrentPage, setPageSize } = pagination;
+
+  const [filters, setFilters] = React.useState<FiltersState>(() => ({
+    search: searchParams.get("search") || "",
+    sort: searchParams.get("sort") || "-createdAt",
+    role: searchParams.get("role") || "",
+  }));
+
+  const [stats, setStats] = React.useState({
+    total: 0,
+    admins: 0,
+    customers: 0,
+  });
+
+  const [deleteModal, setDeleteModal] = React.useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const createDefaultFilters = React.useCallback<() => FiltersState>(
+    () => ({
+      search: "",
+      sort: "-createdAt",
+      role: "",
+    }),
+    []
+  );
+
+  const updateFilter = React.useCallback(
+    (field: keyof FiltersState, value: string) => {
+      let hasChanged = false;
+      setFilters((prev) => {
+        if (prev[field] === value) {
+          return prev;
+        }
+        hasChanged = true;
+        return { ...prev, [field]: value };
+      });
+      if (hasChanged) {
+        setPaginationCurrentPage(1);
+      }
+    },
+    [setPaginationCurrentPage]
+  );
+
+  React.useEffect(() => {
+    if (skipNextUrlSync.current) {
+      skipNextUrlSync.current = false;
+      return;
+    }
+
+    const urlFilters: FiltersState = {
+      search: searchParams.get("search") || "",
+      sort: searchParams.get("sort") || "-createdAt",
+      role: searchParams.get("role") || "",
+    };
+
+    setFilters((prev) =>
+      areFiltersEqual(prev, urlFilters) ? prev : urlFilters
+    );
+
+    const pageFromUrl = parseNumberParam(searchParams.get("page"), 1, {
+      min: 1,
+    });
+    const limitFromUrl = parseNumberParam(searchParams.get("limit"), 10, {
+      min: 1,
+      max: 100,
+    });
+    setPageSize(limitFromUrl);
+    setPaginationCurrentPage(pageFromUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParamsKey]);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams();
+    params.set("page", pagination.currentPage.toString());
+    params.set("limit", pagination.pageSize.toString());
+    if (filters.sort) params.set("sort", filters.sort);
+    if (filters.search) params.set("search", filters.search);
+    if (filters.role) params.set("role", filters.role);
+
+    const newParams = params.toString();
+    if (newParams !== searchParamsKey) {
+      skipNextUrlSync.current = true;
+      setSearchParams(params, { replace: true });
+    }
+  }, [
+    filters.role,
+    filters.search,
+    filters.sort,
+    pagination.currentPage,
+    pagination.pageSize,
+    searchParamsKey,
+    setSearchParams,
+  ]);
 
   const {
     data: users,
     isLoading,
     refetch,
   } = useFetch<User[]>({
-    fetchFn: userService.getUsers,
-    dependencies: [],
+    fetchFn: () => {
+      const sortValue = filters.sort;
+      const sortField = sortValue.startsWith("-")
+        ? sortValue.substring(1)
+        : sortValue;
+      const order = sortValue.startsWith("-") ? "desc" : "asc";
+
+      return userService.getUsers({
+        page: pagination.currentPage,
+        limit: pagination.pageSize,
+        sort: sortField,
+        order,
+        search: filters.search || undefined,
+        role: filters.role || undefined,
+      });
+    },
+    onSuccess: (data, count, response) => {
+      if (!Array.isArray(data)) return;
+
+      const totalFromResponse =
+        response?.pagination?.total ??
+        count ??
+        (pagination.currentPage - 1) * pagination.pageSize + data.length;
+
+      pagination.updateTotalCount(totalFromResponse);
+
+      const totalPages = response?.pagination?.totalPages;
+      if (totalPages) {
+        pagination.setTotalPages(totalPages);
+      } else {
+        pagination.setTotalPages(
+          Math.max(1, Math.ceil(totalFromResponse / pagination.pageSize))
+        );
+      }
+
+      if (response?.stats) {
+        setStats({
+          total: response.stats.total ?? totalFromResponse,
+          admins: response.stats.admins ?? 0,
+          customers: response.stats.customers ?? 0,
+        });
+      } else {
+        const adminCount = data.filter((u) => u.role === "admin").length;
+        const customerCount = data.filter((u) => u.role === "customer").length;
+        setStats({
+          total: totalFromResponse,
+          admins: adminCount,
+          customers: customerCount,
+        });
+      }
+    },
+    dependencies: [
+      pagination.currentPage,
+      pagination.pageSize,
+      filters.search,
+      filters.sort,
+      filters.role,
+    ],
   });
 
   const crud = useCRUD<User>({
@@ -132,81 +372,76 @@ const Users = () => {
       createSuccess: "User created successfully!",
       updateSuccess: "User updated successfully!",
       deleteSuccess: "User deleted successfully!",
+      createError: (error) => extractErrorMessage(error),
+      updateError: (error) => extractErrorMessage(error),
+      deleteError: (error) =>
+        extractErrorMessage(error, "Failed to delete user"),
     },
+    confirmDelete: false,
   });
 
   const handleOpenUserModal = (user?: User) => {
     modal.open(user);
   };
 
-  const handleSubmit = async (e: React.FormEvent, formData: any) => {
-    e.preventDefault();
+  const handleRequestDelete = (user: User) => {
+    setDeleteModal({ id: user._id, name: user.name });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteModal) return;
+    try {
+      await crud.remove(deleteModal.id);
+    } catch (error) {
+      console.error("Delete user error", error);
+    } finally {
+      setDeleteModal(null);
+    }
+  };
+
+  const handleSubmit = async (formData: any) => {
     if (!formData.name || !formData.email) {
       toast.error("Please fill in all required fields");
-      return;
-    }
-
-    if (!modal.editingItem && !formData.password) {
-      toast.error("Password is required for new users");
       return;
     }
 
     const userData: any = {
       name: formData.name,
       email: formData.email,
-      mobile: formData.mobile,
+      mobile: formData.mobile || "",
       role: formData.role || "customer",
     };
 
-    // Only include password when creating or if provided during update
-    if (formData.password) {
-      userData.password = formData.password;
-    }
-
     if (modal.editingItem) {
-      await crud.update(
-        modal.editingItem._id || modal.editingItem.id,
-        userData
-      );
+      try {
+        await crud.update(modal.editingItem._id, userData);
+        modal.close();
+      } catch (error) {
+        console.error("User submission error", error);
+      }
     } else {
-      await crud.create(userData);
+      try {
+        await crud.create(userData);
+        modal.close();
+      } catch (error) {
+        console.error("User submission error", error);
+      }
     }
-    modal.close();
   };
 
-  const filteredUsers = React.useMemo(() => {
-    if (!users) return [];
+  const sortOptions = [
+    { value: "-createdAt", label: "Newest First" },
+    { value: "createdAt", label: "Oldest First" },
+    { value: "name", label: "Name (A-Z)" },
+    { value: "-name", label: "Name (Z-A)" },
+    { value: "email", label: "Email (A-Z)" },
+    { value: "-email", label: "Email (Z-A)" },
+  ];
 
-    let filtered = users;
+  const activeFilters =
+    filters.search || filters.role || filters.sort !== "-createdAt";
 
-    // Apply search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (user) =>
-          user.name.toLowerCase().includes(term) ||
-          user.email.toLowerCase().includes(term) ||
-          user.mobile?.toLowerCase().includes(term)
-      );
-    }
-
-    // Apply role filter
-    if (roleFilter) {
-      filtered = filtered.filter((user) => user.role === roleFilter);
-    }
-
-    return filtered;
-  }, [users, searchTerm, roleFilter]);
-
-  const stats = React.useMemo(() => {
-    if (!users) return { total: 0, admins: 0, customers: 0 };
-    return {
-      total: users.length,
-      admins: users.filter((u) => u.role === "admin").length,
-      customers: users.filter((u) => u.role === "customer").length,
-    };
-  }, [users]);
+  const totalUsers = pagination.totalCount || users?.length || 0;
 
   return (
     <div className="space-y-6">
@@ -216,7 +451,7 @@ const Users = () => {
           <h1 className="text-3xl font-bold text-gray-900">Users</h1>
           <p className="text-gray-600 mt-2">
             Manage system users
-            {filteredUsers && ` (${filteredUsers.length} users)`}
+            {` (${totalUsers} user${totalUsers === 1 ? "" : "s"})`}
           </p>
         </div>
         <button onClick={() => handleOpenUserModal()} className="btn-primary">
@@ -272,27 +507,41 @@ const Users = () => {
 
       {/* Filters */}
       <div className="card">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Search */}
-          <div className="relative">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-sm">
+            <SortAsc size={20} className="text-gray-400" />
+            <select
+              value={filters.sort}
+              onChange={(e) => updateFilter("sort", e.target.value)}
+              className="input-field flex-1"
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
               size={20}
             />
             <input
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={filters.search}
+              onChange={(e) => updateFilter("search", e.target.value)}
               placeholder="Search by name, email, or mobile..."
               className="input-field pl-10"
             />
           </div>
 
-          {/* Role Filter */}
-          <div>
+          <div className="flex items-center gap-2 min-w-[160px]">
+            <Filter size={18} className="text-gray-400" />
             <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
+              value={filters.role}
+              onChange={(e) => updateFilter("role", e.target.value)}
               className="input-field"
             >
               <option value="">All Roles</option>
@@ -300,6 +549,18 @@ const Users = () => {
               <option value="customer">Customer</option>
             </select>
           </div>
+
+          {activeFilters && (
+            <button
+              onClick={() => {
+                setFilters(createDefaultFilters());
+                setPaginationCurrentPage(1);
+              }}
+              className="btn-secondary"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
@@ -307,12 +568,20 @@ const Users = () => {
       <CommonTable
         columns={userColumns({
           handleOpenUserModal,
-          handleDelete: crud.remove,
+          handleDelete: handleRequestDelete,
           isDeleting: crud.isDeleting,
         })}
-        data={filteredUsers}
+        data={users || []}
         isLoading={isLoading}
         title="users"
+        totalPages={pagination.totalPages}
+        totalCount={pagination.totalCount}
+        hidePageSizeControls={false}
+        serverSide
+        onPageChange={pagination.goToPage}
+        onPageSizeChange={setPageSize}
+        currentPage={pagination.currentPage}
+        pageSize={pagination.pageSize}
       />
 
       {/* User Modal */}
@@ -322,161 +591,49 @@ const Users = () => {
         title={modal.isEditing ? "Edit User" : "Add New User"}
         size="md"
       >
-        <UserFormWrapper
+        <UserForm
           user={modal.editingItem}
           onSubmit={handleSubmit}
           onCancel={modal.close}
           isSubmitting={crud.isLoading}
         />
       </Modal>
+
+      <Modal
+        isOpen={Boolean(deleteModal)}
+        onClose={() => setDeleteModal(null)}
+        title="Delete User"
+        size="sm"
+      >
+        {deleteModal && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete
+              <span className="font-semibold"> {deleteModal.name}</span>? This
+              action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteModal(null)}
+                className="btn-secondary"
+                disabled={crud.isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="btn-primary bg-red-600! hover:bg-red-700!"
+                disabled={crud.isDeleting}
+              >
+                {crud.isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
-
-// User Form Wrapper
-const UserFormWrapper = ({
-  user,
-  onSubmit,
-  onCancel,
-  isSubmitting,
-}: {
-  user: User | null;
-  onSubmit: (e: React.FormEvent, formData: any) => void;
-  onCancel: () => void;
-  isSubmitting: boolean;
-}) => {
-  const [formData, setFormData] = React.useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    mobile: user?.mobile || "",
-    password: "",
-    role: user?.role || "customer",
-  });
-
-  React.useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name,
-        email: user.email,
-        mobile: user.mobile || "",
-        password: "",
-        role: user.role,
-      });
-    }
-  }, [user]);
-
-  const handleFormChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
-  };
-
-  return (
-    <form onSubmit={(e) => onSubmit(e, formData)} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Full Name *
-        </label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => handleFormChange("name", e.target.value)}
-          className="input-field"
-          placeholder="Enter full name"
-          disabled={isSubmitting}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Email *
-        </label>
-        <input
-          type="email"
-          value={formData.email}
-          onChange={(e) => handleFormChange("email", e.target.value)}
-          className="input-field"
-          placeholder="Enter email"
-          disabled={isSubmitting}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Mobile
-        </label>
-        <input
-          type="tel"
-          value={formData.mobile}
-          onChange={(e) => handleFormChange("mobile", e.target.value)}
-          className="input-field"
-          placeholder="Enter mobile number"
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Password {!user && "*"}
-        </label>
-        <input
-          type="password"
-          value={formData.password}
-          onChange={(e) => handleFormChange("password", e.target.value)}
-          className="input-field"
-          placeholder={user ? "Leave empty to keep current" : "Enter password"}
-          disabled={isSubmitting}
-          required={!user}
-        />
-        {user && (
-          <p className="text-xs text-gray-500 mt-1">
-            Leave empty to keep current password
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Role *
-        </label>
-        <select
-          value={formData.role}
-          onChange={(e) => handleFormChange("role", e.target.value)}
-          className="input-field"
-          disabled={isSubmitting}
-          required
-        >
-          <option value="customer">Customer</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-
-      {/* Submit Buttons */}
-      <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="btn-primary flex-1"
-        >
-          {isSubmitting
-            ? user
-              ? "Updating..."
-              : "Creating..."
-            : user
-              ? "Update User"
-              : "Create User"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isSubmitting}
-          className="btn-secondary"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
-};
-
 export default Users;

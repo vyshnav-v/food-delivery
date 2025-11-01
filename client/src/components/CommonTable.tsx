@@ -15,7 +15,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import { toast } from "react-hot-toast";
-import NoData from "./NoData";
+import { Search } from "lucide-react";
+import EmptyState from "./EmptyState";
 import Pagination from "./Pagination";
 
 const LIMIT_OPTIONS = [5, 10, 20, 50];
@@ -26,9 +27,17 @@ export interface CommonTableProps<T> {
   error?: string | null;
   isLoading?: boolean;
   totalPages?: number;
+  totalCount?: number;
   dashBoard?: boolean;
   customComponent?: React.ReactNode;
   title?: string;
+  hidePageSizeControls?: boolean;
+  serverSide?: boolean;
+  footer?: React.ReactNode;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  currentPage?: number;
+  pageSize?: number;
 }
 
 const CommonTable = <T,>({
@@ -37,9 +46,17 @@ const CommonTable = <T,>({
   error,
   isLoading,
   totalPages: TotalPages,
+  totalCount,
   dashBoard,
   customComponent,
   title = "items",
+  hidePageSizeControls = false,
+  serverSide = false,
+  footer,
+  onPageChange,
+  onPageSizeChange,
+  currentPage: controlledPage,
+  pageSize: controlledPageSize,
 }: CommonTableProps<T>) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -52,6 +69,20 @@ const CommonTable = <T,>({
     setCurrentPage(Number(searchParams.get("page")) || 1);
     setLimit(Number(searchParams.get("limit")) || 10);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!serverSide) return;
+    if (typeof controlledPage === "number") {
+      setCurrentPage(controlledPage);
+    }
+  }, [controlledPage, serverSide]);
+
+  useEffect(() => {
+    if (!serverSide) return;
+    if (typeof controlledPageSize === "number") {
+      setLimit(controlledPageSize);
+    }
+  }, [controlledPageSize, serverSide]);
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -70,12 +101,29 @@ const CommonTable = <T,>({
   );
 
   const handlePageChange = (newPage: number) => {
+    if (serverSide) {
+      setCurrentPage(newPage);
+      if (onPageChange) {
+        onPageChange(newPage);
+      }
+      return;
+    }
+
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", newPage.toString());
     navigate(`?${params.toString()}`);
   };
 
   const handleLimitChange = (newLimit: number) => {
+    if (serverSide) {
+      setLimit(newLimit);
+      setCurrentPage(1);
+      if (onPageSizeChange) {
+        onPageSizeChange(newLimit);
+      }
+      return;
+    }
+
     const params = new URLSearchParams(searchParams.toString());
     params.set("limit", newLimit.toString());
     params.set("page", "1"); // Reset to page 1 when limit changes
@@ -84,10 +132,10 @@ const CommonTable = <T,>({
 
   const paginatedData = useMemo(
     () =>
-      TotalPages
+      TotalPages || serverSide
         ? data
         : data.slice((currentPage - 1) * limit, currentPage * limit),
-    [TotalPages, data, currentPage, limit]
+    [TotalPages, serverSide, data, currentPage, limit]
   );
 
   const table = useReactTable({
@@ -99,35 +147,46 @@ const CommonTable = <T,>({
     onSortingChange: setSorting,
   });
 
-  const totalPages = useMemo(
-    () => TotalPages || Math.ceil(data?.length / limit),
-    [TotalPages, data, limit]
-  );
+  const totalItems = useMemo(() => {
+    if (typeof totalCount === "number") return totalCount;
+    return data?.length || 0;
+  }, [totalCount, data]);
+
+  const totalPages = useMemo(() => {
+    if (TotalPages) return TotalPages;
+    return Math.max(1, Math.ceil(totalItems / limit));
+  }, [TotalPages, totalItems, limit]);
 
   return (
     <>
       <div className="card overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200 bg-linear-to-r from-gray-50 to-white">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-700 font-medium">Show:</span>
-              <select
-                className="input-field py-2 px-4 text-sm font-medium border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 rounded-lg shadow-sm"
-                value={limit}
-                onChange={(e) => handleLimitChange(Number(e.target.value))}
-              >
-                {LIMIT_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option} rows
-                  </option>
-                ))}
-              </select>
+        {(!hidePageSizeControls || customComponent) && (
+          <div className="px-6 py-4 border-b border-gray-200 bg-linear-to-r from-gray-50 to-white">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              {!hidePageSizeControls && (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-700 font-medium">
+                    Show:
+                  </span>
+                  <select
+                    className="input-field py-2 px-4 text-sm font-medium border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 rounded-lg shadow-sm"
+                    value={limit}
+                    onChange={(e) => handleLimitChange(Number(e.target.value))}
+                  >
+                    {LIMIT_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option} rows
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {customComponent && (
+                <div className="ml-auto">{customComponent}</div>
+              )}
             </div>
-            {customComponent && (
-              <div className="ml-auto">{customComponent}</div>
-            )}
           </div>
-        </div>
+        )}
         <div className="w-full overflow-x-auto">
           <table className="w-full table-auto border-collapse">
             <thead>
@@ -196,11 +255,12 @@ const CommonTable = <T,>({
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={columns.length + 1}
-                    className="w-full p-4 text-center"
-                  >
-                    <NoData title={title} />
+                  <td colSpan={columns.length + 1} className="w-full p-0">
+                    <EmptyState
+                      icon={Search}
+                      title={`No ${title || "data"} found`}
+                      description="Try adjusting your search or filter criteria"
+                    />
                   </td>
                 </tr>
               )}
@@ -208,9 +268,10 @@ const CommonTable = <T,>({
           </table>
         </div>
       </div>
+      {footer}
       {!dashBoard && totalPages > 1 && (
         <Pagination
-          total={data?.length || 0}
+          total={totalItems}
           currentPage={currentPage || 1}
           pageSize={limit || 10}
           onChange={handlePageChange}

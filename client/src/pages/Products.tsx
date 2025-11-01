@@ -86,6 +86,10 @@ const Products = () => {
     search: searchParams.get("search") || "",
   }));
   const [showFilters, setShowFilters] = React.useState(false);
+  const [deleteModal, setDeleteModal] = React.useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const createDefaultFilters = React.useCallback<() => FiltersState>(
     () => ({
@@ -173,7 +177,12 @@ const Products = () => {
 
   // Fetch categories for filter dropdown
   const { data: categoriesData } = useFetch<Category[]>({
-    fetchFn: categoryService.getCategories,
+    fetchFn: () =>
+      categoryService.getCategories({
+        limit: 200,
+        sort: "name",
+        order: "asc",
+      }),
     dependencies: [],
   });
 
@@ -229,6 +238,7 @@ const Products = () => {
       updateSuccess: "Product updated successfully!",
       deleteSuccess: "Product deleted successfully!",
     },
+    confirmDelete: false,
   });
 
   const handleSortChange = (value: string) => {
@@ -252,6 +262,22 @@ const Products = () => {
 
   const handleOpenProductModal = (product?: Product) => {
     modal.open(product);
+  };
+
+  const handleRequestDelete = (product: Product) => {
+    if (!product._id) return;
+    setDeleteModal({ id: product._id, name: product.name });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal) return;
+    try {
+      await crud.remove(deleteModal.id);
+    } catch (error) {
+      console.error("Delete product error", error);
+    } finally {
+      setDeleteModal(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent, formData: any) => {
@@ -449,7 +475,7 @@ const Products = () => {
               filters.sort !== "name") && (
               <button
                 onClick={clearFilters}
-                className="btn-secondary !bg-white !text-primary-600 hover:!bg-primary-50"
+                className="btn-secondary bg-white! text-primary-600! hover:bg-primary-50!"
               >
                 Clear
               </button>
@@ -617,7 +643,7 @@ const Products = () => {
                       <Edit size={16} className="text-gray-600" />
                     </button>
                     <button
-                      onClick={() => crud.remove(product._id)}
+                      onClick={() => handleRequestDelete(product)}
                       className="p-2 bg-white rounded-lg shadow-lg hover:bg-red-50 transition-colors"
                       title="Delete product"
                       disabled={crud.isDeleting}
@@ -700,6 +726,41 @@ const Products = () => {
           onCancel={modal.close}
           isSubmitting={crud.isLoading}
         />
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(deleteModal)}
+        onClose={() => setDeleteModal(null)}
+        title="Delete Product"
+        size="sm"
+      >
+        {deleteModal && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete
+              <span className="font-semibold"> {deleteModal.name}</span>? This
+              action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteModal(null)}
+                className="btn-secondary"
+                disabled={crud.isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="btn-primary bg-red-600! hover:bg-red-700!"
+                disabled={crud.isDeleting}
+              >
+                {crud.isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

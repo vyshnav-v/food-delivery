@@ -124,11 +124,15 @@ const ProductForm = ({
     {
       name: "price",
       label: "Price ($)",
-      type: "number",
+      type: "text",
       placeholder: "0.00",
+      inputMode: "decimal",
       validate: {
         required: "Price is required",
-        min: { value: 0, message: "Price must be positive" },
+        pattern: {
+          value: /^(?:\d+)(?:\.\d{0,2})?$/,
+          message: "Enter a valid price (up to 2 decimals)",
+        },
       },
       isVertical: true,
     },

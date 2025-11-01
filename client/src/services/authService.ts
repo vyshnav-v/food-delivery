@@ -22,6 +22,16 @@ export const authService = {
     return response.data;
   },
 
+  async updateProfile(data: {
+    name?: string;
+    email?: string;
+    mobile?: string;
+    password?: string;
+  }): Promise<{ success: boolean; data: User }> {
+    const response = await axios.put("/auth/profile", data);
+    return response.data;
+  },
+
   async logout(): Promise<void> {
     await axios.post("/auth/logout");
     localStorage.removeItem("token");

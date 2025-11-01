@@ -52,7 +52,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       data: {
         token,
         user: {
-          id: user._id,
+          _id: user._id,
           name: user.name,
           email: user.email,
           role: user.role,
@@ -119,10 +119,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       data: {
         token,
         user: {
-          id: user._id,
+          _id: user._id,
           name: user.name,
           email: user.email,
+          mobile: user.mobile,
           role: user.role,
+          createdAt: user.createdAt,
         },
       },
     });
@@ -162,9 +164,10 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       success: true,
       data: {
         user: {
-          id: user._id,
+          _id: user._id,
           name: user.name,
           email: user.email,
+          mobile: user.mobile,
           role: user.role,
           createdAt: user.createdAt,
         },
@@ -174,6 +177,74 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(500).json({
       success: false,
       message: "Error fetching user profile",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: "Not authenticated",
+      });
+      return;
+    }
+
+    const { name, email, mobile, password } = req.body;
+
+    const user = await User.findById(req.user.userId).select("+password");
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    // Check if email is already taken by another user
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: req.user.userId },
+      });
+
+      if (existingUser) {
+        res.status(400).json({
+          success: false,
+          message: "Email already taken",
+        });
+        return;
+      }
+    }
+
+    // Update user fields
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (mobile !== undefined) user.mobile = mobile;
+    if (password) user.password = password; // Will be hashed by pre-save hook
+
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select("-password");
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: updatedUser,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating profile",
       error: error.message,
     });
   }

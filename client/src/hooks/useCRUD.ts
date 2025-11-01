@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 
+type MessageResolver =
+  | string
+  | ((error: unknown) => string | void)
+  | null
+  | undefined;
+
 interface UseCRUDOptions<T> {
   createFn?: (data: Partial<T>) => Promise<any>;
   updateFn?: (id: string, data: Partial<T>) => Promise<any>;
@@ -10,9 +16,9 @@ interface UseCRUDOptions<T> {
     createSuccess?: string;
     updateSuccess?: string;
     deleteSuccess?: string;
-    createError?: string;
-    updateError?: string;
-    deleteError?: string;
+    createError?: MessageResolver;
+    updateError?: MessageResolver;
+    deleteError?: MessageResolver;
   };
   confirmDelete?: boolean;
 }
@@ -33,6 +39,28 @@ export function useCRUD<T>({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const handleErrorToast = (
+    resolver: MessageResolver,
+    fallback: string,
+    error: unknown
+  ) => {
+    if (resolver === null) return;
+    if (typeof resolver === "function") {
+      const message = resolver(error);
+      if (message) {
+        toast.error(message);
+      }
+      return;
+    }
+    if (typeof resolver === "string" && resolver.trim().length > 0) {
+      toast.error(resolver);
+      return;
+    }
+    if (resolver === undefined) {
+      toast.error(fallback);
+    }
+  };
+
   // Use ref to store latest onSuccess callback to prevent infinite loops
   const onSuccessRef = React.useRef(onSuccess);
   React.useEffect(() => {
@@ -49,7 +77,7 @@ export function useCRUD<T>({
       return result;
     } catch (error) {
       console.error("Create error:", error);
-      toast.error(messages.createError || "Failed to create");
+      handleErrorToast(messages.createError, "Failed to create", error);
       throw error;
     } finally {
       setIsCreating(false);
@@ -66,7 +94,7 @@ export function useCRUD<T>({
       return result;
     } catch (error) {
       console.error("Update error:", error);
-      toast.error(messages.updateError || "Failed to update");
+      handleErrorToast(messages.updateError, "Failed to update", error);
       throw error;
     } finally {
       setIsUpdating(false);
@@ -85,7 +113,7 @@ export function useCRUD<T>({
       onSuccessRef.current?.();
     } catch (error) {
       console.error("Delete error:", error);
-      toast.error(messages.deleteError || "Failed to delete");
+      handleErrorToast(messages.deleteError, "Failed to delete", error);
       throw error;
     } finally {
       setIsDeleting(false);

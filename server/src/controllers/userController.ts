@@ -1,21 +1,76 @@
 import { Response } from "express";
 import User from "../models/User";
 import { AuthRequest } from "../types";
+import {
+  formatPaginationResponse,
+  getPaginationParams,
+  getPaginationSkip,
+} from "../utils/pagination";
 
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private
 export const getAllUsers = async (
-  _req: AuthRequest,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const users = await User.find().select("-password").sort({ createdAt: -1 });
+    const { page, limit, sort, order } = getPaginationParams(req);
+    const skip = getPaginationSkip(page, limit);
+
+    const search = (req.query.search as string) || "";
+    const role = req.query.role as string | undefined;
+
+    const filter: Record<string, unknown> = {};
+
+    if (search) {
+      const regex = new RegExp(
+        search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        "i"
+      );
+      filter.$or = [{ name: regex }, { email: regex }, { mobile: regex }];
+    }
+
+    if (role) {
+      filter.role = role;
+    }
+
+    let sortField = sort;
+    let sortOrder: 1 | -1 = order === "asc" ? 1 : -1;
+
+    if (sort.startsWith("-")) {
+      sortField = sort.substring(1);
+      sortOrder = -1;
+    }
+
+    const sortObj: Record<string, 1 | -1> = {
+      [sortField]: sortOrder,
+    };
+
+    const total = await User.countDocuments(filter);
+
+    const users = await User.find(filter)
+      .select("-password")
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const [adminCount, customerCount] = await Promise.all([
+      User.countDocuments({ ...filter, role: "admin" }),
+      User.countDocuments({ ...filter, role: "customer" }),
+    ]);
+
+    const response = formatPaginationResponse(users, total, page, limit);
 
     res.status(200).json({
       success: true,
-      count: users.length,
-      data: users,
+      ...response,
+      stats: {
+        total,
+        admins: adminCount,
+        customers: customerCount,
+      },
     });
   } catch (error: any) {
     res.status(500).json({
@@ -78,12 +133,15 @@ export const createUser = async (
       return;
     }
 
+    // Set default password if not provided
+    const userPassword = password || "Welcome@123";
+
     // Create user
     const user = await User.create({
       name,
       email,
       mobile,
-      password,
+      password: userPassword,
       role: role || "customer",
     });
 
@@ -94,7 +152,9 @@ export const createUser = async (
 
     res.status(201).json({
       success: true,
-      message: "User created successfully",
+      message: password
+        ? "User created successfully"
+        : "User created successfully with default password (Welcome@123)",
       data: userWithoutPassword,
     });
   } catch (error: any) {

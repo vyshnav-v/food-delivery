@@ -22,6 +22,13 @@ const app: Application = express();
 // Connect to MongoDB
 connectDB();
 
+// Resolve API prefix and version from environment variables
+const apiPrefix = (process.env.API_PREFIX || "/api").replace(/\/+$/, "");
+const apiVersionValue = process.env.API_VERSION
+  ? `/${process.env.API_VERSION.replace(/^\/+|\/+$/g, "")}`
+  : "";
+const apiBasePath = `${apiPrefix}${apiVersionValue}`;
+
 // Middleware
 app.use(
   cors({
@@ -36,7 +43,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Basic health check route
-app.get("/api/health", (_req: Request, res: Response) => {
+app.get(`${apiBasePath}/health`, (_req: Request, res: Response) => {
   res.json({
     status: "ok",
     message: "Food Delivery Admin API is running",
@@ -45,12 +52,12 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 // Mount routes
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/dashboard", dashboardRoutes);
+app.use(`${apiBasePath}/auth`, authRoutes);
+app.use(`${apiBasePath}/users`, userRoutes);
+app.use(`${apiBasePath}/categories`, categoryRoutes);
+app.use(`${apiBasePath}/products`, productRoutes);
+app.use(`${apiBasePath}/orders`, orderRoutes);
+app.use(`${apiBasePath}/dashboard`, dashboardRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFound);
@@ -59,6 +66,6 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`📦 Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });

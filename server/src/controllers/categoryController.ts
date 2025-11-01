@@ -1,22 +1,100 @@
 import { Response } from "express";
 import { validationResult } from "express-validator";
 import Category from "../models/Category";
+import Product from "../models/Product";
 import { AuthRequest } from "../types";
+import {
+  formatPaginationResponse,
+  getPaginationParams,
+  getPaginationSkip,
+} from "../utils/pagination";
 
 // @desc    Get all categories
 // @route   GET /api/categories
 // @access  Private
 export const getCategories = async (
-  _req: AuthRequest,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const categories = await Category.find().sort({ createdAt: -1 });
+    const { page, limit, sort, order } = getPaginationParams(req);
+    const skip = getPaginationSkip(page, limit);
+
+    const search = (req.query.search as string) || "";
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+    const includeProductCount = req.query.includeProductCount === "true";
+
+    const filter: Record<string, unknown> = {};
+
+    if (search) {
+      const regex = new RegExp(
+        search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        "i"
+      );
+      filter.$or = [{ name: regex }, { description: regex }];
+    }
+
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) {
+        (filter.createdAt as Record<string, Date>).$gte = new Date(startDate);
+      }
+      if (endDate) {
+        (filter.createdAt as Record<string, Date>).$lte = new Date(endDate);
+      }
+    }
+
+    let sortField = sort;
+    let sortOrder: 1 | -1 = order === "asc" ? 1 : -1;
+
+    if (sort.startsWith("-")) {
+      sortField = sort.substring(1);
+      sortOrder = -1;
+    }
+
+    const sortObj: Record<string, 1 | -1> = {
+      [sortField]: sortOrder,
+    };
+
+    const total = await Category.countDocuments(filter);
+
+    const categories = await Category.find(filter)
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    let data = categories as Array<Record<string, any>>;
+
+    if (includeProductCount && categories.length > 0) {
+      const categoryIds = categories.map((category) => category._id);
+
+      const counts = await Product.aggregate([
+        { $match: { category: { $in: categoryIds } } },
+        {
+          $group: {
+            _id: "$category",
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const countMap = new Map(
+        counts.map((entry) => [entry._id.toString(), entry.count as number])
+      );
+
+      data = categories.map((category) => ({
+        ...category,
+        productCount: countMap.get(category._id.toString()) || 0,
+      }));
+    }
+
+    const response = formatPaginationResponse(data, total, page, limit);
 
     res.status(200).json({
       success: true,
-      count: categories.length,
-      data: categories,
+      ...response,
     });
   } catch (error: any) {
     res.status(500).json({

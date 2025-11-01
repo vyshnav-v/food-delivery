@@ -147,6 +147,7 @@ export const CommonForm: FC<CommonFormProps> = ({
                 setUploadedFile={(files: any) => onChange(files)}
                 error={error?.message}
                 showPreview={showPreview}
+                subLabel={_subLabel}
                 {...fieldProps}
               />
             )}

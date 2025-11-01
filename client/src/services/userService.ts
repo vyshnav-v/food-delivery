@@ -1,9 +1,31 @@
 import axios from "../utils/axios";
 import type { User, ApiResponse } from "../types";
 
+type UserQuery = {
+  search?: string;
+  role?: string;
+  sort?: string;
+  order?: "asc" | "desc";
+  page?: number;
+  limit?: number;
+};
+
+const sanitizeParams = (params?: UserQuery) => {
+  if (!params) return undefined;
+  const query: Record<string, unknown> = {};
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") {
+      query[key] = value;
+    }
+  });
+  return query;
+};
+
 export const userService = {
-  async getUsers(): Promise<ApiResponse<User[]>> {
-    const response = await axios.get("/users");
+  async getUsers(params?: UserQuery): Promise<ApiResponse<User[]>> {
+    const response = await axios.get("/users", {
+      params: sanitizeParams(params),
+    });
     return response.data;
   },
 

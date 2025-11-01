@@ -1,25 +1,153 @@
 import { Response } from "express";
+import { Types } from "mongoose";
+
 import Order from "../models/Order";
 import Product from "../models/Product";
+import User from "../models/User";
 import { AuthRequest } from "../types";
+import {
+  getPaginationParams,
+  getPaginationSkip,
+  formatPaginationResponse,
+} from "../utils/pagination";
 
 // @desc    Get all orders
 // @route   GET /api/orders
 // @access  Private
 export const getAllOrders = async (
-  _req: AuthRequest,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const orders = await Order.find()
-      .populate("user", "name email mobile")
-      .populate("items.product", "name price imageUrl")
-      .sort({ createdAt: -1 });
+    const { page, limit, sort, order } = getPaginationParams(req);
+    const skip = getPaginationSkip(page, limit);
+
+    const search = (req.query.search as string) || "";
+    const status = (req.query.status as string) || "";
+    const userId = (req.query.userId as string) || "";
+
+    const filter: Record<string, any> = {};
+
+    if (status) {
+      filter.status = status;
+    }
+
+    if (userId && Types.ObjectId.isValid(userId)) {
+      filter.user = new Types.ObjectId(userId);
+    }
+
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escaped, "i");
+
+      const matchingUsers = await User.find({
+        $or: [{ name: regex }, { email: regex }, { mobile: regex }],
+      })
+        .select("_id")
+        .lean();
+
+      const orConditions: any[] = [
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $toString: "$_id" },
+              regex,
+            },
+          },
+        },
+      ];
+
+      if (matchingUsers.length > 0) {
+        orConditions.push({
+          user: {
+            $in: matchingUsers.map((user) => user._id),
+          },
+        });
+      }
+
+      filter.$or = orConditions;
+    }
+
+    let sortField = sort;
+    let sortOrder: 1 | -1 = order === "asc" ? 1 : -1;
+
+    if (!sort && order === "desc") {
+      sortField = "createdAt";
+      sortOrder = -1;
+    }
+
+    const allowedSortFields = new Set([
+      "createdAt",
+      "orderDate",
+      "totalAmount",
+      "status",
+    ]);
+
+    if (!allowedSortFields.has(sortField)) {
+      sortField = "createdAt";
+    }
+
+    const sortObj: Record<string, 1 | -1> = {
+      [sortField]: sortOrder,
+    };
+
+    const [orders, total, statsAggregation] = await Promise.all([
+      Order.find(filter)
+        .populate("user", "name email mobile")
+        .populate("items.product", "name price imageUrl")
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Order.countDocuments(filter),
+      Order.aggregate([
+        Object.keys(filter).length ? { $match: filter } : { $match: {} },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+            revenue: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "cancelled"] }, 0, "$totalAmount"],
+              },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const stats = statsAggregation.reduce(
+      (
+        acc: {
+          totalOrders: number;
+          totalRevenue: number;
+          byStatus: Record<string, number>;
+        },
+        curr
+      ) => {
+        acc.totalOrders += curr.count || 0;
+        acc.totalRevenue += curr.revenue || 0;
+        acc.byStatus[curr._id as string] = curr.count || 0;
+        return acc;
+      },
+      {
+        totalOrders: 0,
+        totalRevenue: 0,
+        byStatus: {
+          pending: 0,
+          confirmed: 0,
+          delivered: 0,
+          cancelled: 0,
+        },
+      }
+    );
+
+    const response = formatPaginationResponse(orders, total, page, limit);
 
     res.status(200).json({
       success: true,
-      count: orders.length,
-      data: orders,
+      ...response,
+      stats,
     });
   } catch (error: any) {
     res.status(500).json({

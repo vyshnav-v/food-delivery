@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./stores/authStore";
 import { Loader2 } from "lucide-react";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Layouts
 import MainLayout from "./layouts/MainLayout.tsx";
@@ -23,6 +24,7 @@ import Products from "./pages/Products.tsx";
 import Orders from "./pages/Orders.tsx";
 import Categories from "./pages/Categories.tsx";
 import Users from "./pages/Users.tsx";
+import Profile from "./pages/Profile.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 function App() {
@@ -79,11 +81,54 @@ function App() {
               isAuthenticated ? <MainLayout /> : <Navigate to="/login" />
             }
           >
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/users" element={<Users />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ErrorBoundary>
+                  <Dashboard />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <ErrorBoundary>
+                  <Products />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <ErrorBoundary>
+                  <Orders />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="/categories"
+              element={
+                <ErrorBoundary>
+                  <Categories />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ErrorBoundary>
+                  <Users />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ErrorBoundary>
+                  <Profile />
+                </ErrorBoundary>
+              }
+            />
           </Route>
 
           {/* Default Redirect */}

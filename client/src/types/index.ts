@@ -1,6 +1,5 @@
 export interface User {
-  id: string;
-  _id?: string;
+  _id: string;
   name: string;
   email: string;
   mobile?: string;
@@ -37,6 +36,7 @@ export interface Category {
   description?: string;
   createdAt: string;
   updatedAt: string;
+  productCount?: number;
 }
 
 export interface CreateCategoryInput {
@@ -60,6 +60,7 @@ export interface ApiResponse<T> {
   pagination?: PaginationMeta;
   message?: string;
   error?: string;
+  stats?: Record<string, any>;
 }
 
 export interface Product {

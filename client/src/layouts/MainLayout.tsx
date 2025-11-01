@@ -111,7 +111,7 @@ const MainLayout = () => {
                 <Utensils className="text-white" size={24} />
               </div>
               <h1 className="text-xl font-bold text-primary-700 hidden sm:block">
-                Food Delivery Admin
+                Food Delivery
               </h1>
             </div>
           </div>
@@ -123,7 +123,7 @@ const MainLayout = () => {
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                 className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition-colors"
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-800 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
+                <div className="w-10 h-10 bg-linear-to-br from-primary-600 to-primary-800 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
                   {user?.name?.[0]?.toUpperCase() || "U"}
                 </div>
                 <div className="hidden sm:flex flex-col items-start">
@@ -161,7 +161,7 @@ const MainLayout = () => {
                   <button
                     onClick={() => {
                       setShowProfileDropdown(false);
-                      // Navigate to profile page if you have one
+                      navigate("/profile");
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
                   >

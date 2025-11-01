@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, InputHTMLAttributes } from "react";
 import type { UseFormReturn, RegisterOptions } from "react-hook-form";
 
 export interface SelectOption {
@@ -44,6 +44,8 @@ export interface Field {
   cropAspect?: number;
   accept?: string;
   showPreview?: boolean;
+  step?: number | string;
+  inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
 }
 
 export interface CommonFormProps {
@@ -133,4 +135,5 @@ export interface FormInputProps {
   value?: any;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   values?: SelectOption[];
+  inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
 }

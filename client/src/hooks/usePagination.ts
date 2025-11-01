@@ -15,6 +15,7 @@ export function usePagination({
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [limit, setLimit] = useState(pageSize);
 
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -29,20 +30,30 @@ export function usePagination({
 
   const updateTotalCount = (count: number) => {
     setTotalCount(count);
-    setTotalPages(Math.ceil(count / pageSize));
+    setTotalPages(Math.max(1, Math.ceil(count / limit)));
+  };
+
+  const setPageSize = (newLimit: number) => {
+    if (Number.isNaN(newLimit) || newLimit <= 0 || newLimit === limit) return;
+    setLimit(newLimit);
+    setCurrentPage(1);
+    if (totalCount > 0) {
+      setTotalPages(Math.max(1, Math.ceil(totalCount / newLimit)));
+    }
   };
 
   const reset = () => {
     setCurrentPage(initialPage);
     setTotalPages(1);
     setTotalCount(0);
+    setLimit(pageSize);
   };
 
   return {
     currentPage,
     totalPages,
     totalCount,
-    pageSize,
+    pageSize: limit,
     goToPage,
     nextPage,
     prevPage,
@@ -51,6 +62,7 @@ export function usePagination({
     setCurrentPage,
     setTotalPages,
     updateTotalCount,
+    setPageSize,
     reset,
     hasNextPage: currentPage < totalPages,
     hasPrevPage: currentPage > 1,
